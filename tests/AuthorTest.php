@@ -4,7 +4,7 @@ namespace App\Tests;
 
 use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 
-class BookTest extends ApiTestCase
+class AuthorTest extends ApiTestCase
 {
     private $client;
     protected function setUp(): void
@@ -13,18 +13,18 @@ class BookTest extends ApiTestCase
         $this->client = static::createClient();
     }
 
-    public function testGetAllBooks(): void
+    public function testGetAllAuthors(): void
     {
         // Request a specific page
-        $crawler = $this->client->request('GET', '/api/book');
+        $crawler = $this->client->request('GET', '/api/author');
         // Validate a successful response
         $this->assertResponseIsSuccessful();
-        $this->assertCount(20, $crawler->toArray());
+        $this->assertCount(10, $crawler->toArray());
     }
 
-    public function testGetSingleBook(): void
+    public function testGetSingleAuthor(): void
     {
-        $response = $this->client->request('GET', '/api/book/2');
+        $response = $this->client->request('GET', '/api/author/2');
         $this->assertResponseIsSuccessful();
     }
 }
