@@ -2,7 +2,9 @@
 
 namespace App\Controller;
 
+use App\Entity\Author;
 use App\Entity\Book;
+use App\Repository\AuthorRepository;
 use App\Repository\BookRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,10 +36,14 @@ class BookController extends AbstractController
     }
 
     #[Route('/api/book', name: 'new_book', methods: ['POST'])]
-    public function createSingleBook(BookRepository $bookRepository, Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $generator): JsonResponse
+    public function createSingleBook(BookRepository $bookRepository, AuthorRepository $authorRepository, Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $generator): JsonResponse
     {
         $serializedBody = $request->getContent();
         $jsonBody = json_decode($serializedBody, true); // => null
+
+        if ($jsonBody['author']) {
+            $newAuthor = $this->createNewAuthor($authorRepository, $jsonBody['author'], $em);
+        }
 
         try {
             $isExistingBook = $bookRepository->findOneBy(['title' => $jsonBody['title']]);
@@ -48,12 +54,45 @@ class BookController extends AbstractController
             echo $e;
         }
 
-        $body = $serializer->deserialize($serializedBody, Book::class, "json");
-        $em->persist($body);
-        $em->flush();
-        $jsonBook = $serializer->serialize($body, 'json', ['groups' => 'getBooks']);
+        $newBook = $this->createNewBook($serializer, $serializedBody, $newAuthor, $em);
+        $jsonBook = $serializer->serialize($newBook, 'json', ['groups' => 'getBooks']);
 
-        $location = $generator->generate("new_book", ['id' => $body->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
+        $location = $generator->generate("new_book", ['id' => $newBook->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
         return new JsonResponse($jsonBook, 201, ["location" => $location], true);
+    }
+
+    public function createNewAuthor(AuthorRepository $authorRepository, $author, EntityManagerInterface $em): Author
+    {
+        $newAuthor = new Author();
+        try {
+            $isExistingAuthor = $authorRepository->findOneBy(['firstName' => $author['firstName'], 'lastName' => $author['lastName']]);
+            if (!$isExistingAuthor) {
+                $newAuthor->setFirstName($author['firstName']);
+                $newAuthor->setLastName($author['lastName']);
+                $em->persist($newAuthor);
+                $em->flush();
+            } else {
+                $newAuthor = $isExistingAuthor;
+            }
+        } catch (RouteNotFoundException $e) {
+            echo $e;
+        }
+        return $newAuthor;
+    }
+
+    public function createNewBook(SerializerInterface $serializer, bool|string|null $serializedBody, Author $newAuthor, EntityManagerInterface $em): Book
+    {
+        $body = $serializer->deserialize($serializedBody, Book::class, "json");
+
+        $newBook = new Book();
+        $newBook->setTitle($body->getTitle());
+        $newBook->setCoverText($body->getCoverText());
+        if ($newAuthor) {
+            $newBook->setAuthor($newAuthor);
+        }
+
+        $em->persist($newBook);
+        $em->flush();
+        return $newBook;
     }
 }

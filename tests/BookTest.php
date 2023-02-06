@@ -33,8 +33,12 @@ class BookTest extends ApiTestCase
     public function testCreateBook(): void
     {
         $body = '{
-            "title": "Super title",
-            "coverText": "Nulla numquam dolor numquam quo. Quas nam nobis consequuntur soluta impedit."
+            "title": "Super title 2",
+            "coverText": "Nulla numquam dolor numquam quo. Quas nam nobis consequuntur soluta impedit.",
+            "author": {
+                "firstName": "Pedro",
+                "lastName": "Dupont"
+            }
         }';
         $response = self::$client->request('POST','/api/book',['body' => $body]);
         $this->assertResponseIsSuccessful();
