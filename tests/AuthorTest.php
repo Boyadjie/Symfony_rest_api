@@ -6,17 +6,18 @@ use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 
 class AuthorTest extends ApiTestCase
 {
-    private $client;
+    protected static $client;
     protected function setUp(): void
     {
         // "client" that is acting as the browser
-        $this->client = static::createClient();
+        self::$client = static::createClient();
+
     }
 
     public function testGetAllAuthors(): void
     {
         // Request a specific page
-        $crawler = $this->client->request('GET', '/api/author');
+        $crawler = self::$client->request('GET', '/api/author');
         // Validate a successful response
         $this->assertResponseIsSuccessful();
         $this->assertCount(10, $crawler->toArray());
@@ -24,7 +25,17 @@ class AuthorTest extends ApiTestCase
 
     public function testGetSingleAuthor(): void
     {
-        $response = $this->client->request('GET', '/api/author/2');
+        $response = self::$client->request('GET', '/api/author/2');
+        $this->assertResponseIsSuccessful();
+    }
+
+    public function testCreateBook(): void
+    {
+        $body = '{
+            "firstName": "Pedro",
+            "lastName": "Dupont"
+        }';
+        $response = self::$client->request('POST','/api/author',['body' => $body]);
         $this->assertResponseIsSuccessful();
     }
 }
